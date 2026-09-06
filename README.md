@@ -17,7 +17,20 @@ redraws exactly once per minute so it costs essentially nothing to leave running
 The Digital and Analog faces take a color scheme. Dark: Midnight, Slate, Ember.
 Light: Paper, Cloud, Sage. The LED, VFD and Flip faces keep their own fixed looks.
 
+**Download**: the newest build is always at
+[github.com/sduemler/MacClock/releases/latest](https://github.com/sduemler/MacClock/releases/latest).
+Every push to `main` builds the app on GitHub Actions and publishes it there.
+
 See [INSTALL.md](INSTALL.md) for step-by-step installation on the Mac mini.
+
+## Releases
+
+`.github/workflows/release.yml` runs on every pull request and push to `main`.
+Pull requests get a build check plus downloadable artifacts (the zipped app and
+PNG previews of every face). Pushes to `main` also publish a GitHub release
+tagged `v<version>-<run number>` and marked latest. The version comes from
+`CFBundleShortVersionString` in `Resources/Info.plist`; bump it there when a
+change deserves a new number. The build number is the workflow run number.
 
 ## Build
 

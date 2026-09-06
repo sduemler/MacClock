@@ -15,9 +15,14 @@ the Wokyis dock, and getting it parked on the dock's screen.
 The dock's screen must show up in **System Settings > Displays** as a second
 monitor. MacClock draws to it like any other display.
 
-## 1. Build the app
+## 1. Get the app
 
-On the build machine:
+The easiest route is the newest GitHub release: open
+[github.com/sduemler/MacClock/releases/latest](https://github.com/sduemler/MacClock/releases/latest),
+download `MacClock.zip`, and unzip it. Skip to step 2. Every push to `main`
+publishes a fresh build there automatically.
+
+To build it yourself instead, on the build machine:
 
 ```bash
 cd ~/Code/Desktop/MacClock
@@ -100,8 +105,9 @@ Settings are saved immediately and survive restarts.
 
 ## Updating
 
-Rebuild on the build machine with `./build.sh`, copy the new `MacClock.app` over
-the old one in `/Applications` on the Mac mini, and relaunch. Settings are kept
+Download the newest `MacClock.zip` from the releases page (or rebuild with
+`./build.sh`), copy the new `MacClock.app` over the old one in `/Applications`
+on the Mac mini, and relaunch. Settings are kept
 in the user's preferences, not inside the app, so they carry over. If the
 quarantine flag comes back, clear it again as in step 3.
 

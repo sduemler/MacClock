@@ -1,0 +1,93 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build MacClock.app
+    runs-on: macos-15
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build app bundle
+        run: ./build.sh
+
+      - name: Stamp build number
+        id: meta
+        run: |
+          PLIST=build/MacClock.app/Contents/Info.plist
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$PLIST")
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" "$PLIST"
+          codesign --force --sign - build/MacClock.app
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}-${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify bundle
+        run: |
+          codesign --verify --verbose build/MacClock.app
+          lipo -info build/MacClock.app/Contents/MacOS/MacClock
+
+      - name: Render face previews
+        run: |
+          build/MacClock.app/Contents/MacOS/MacClock --snapshot previews 1280x720 10:08
+
+      - name: Zip app
+        run: ditto -c -k --keepParent build/MacClock.app build/MacClock.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MacClock
+          path: build/MacClock.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: face-previews
+          path: previews/*.png
+
+  release:
+    name: Publish release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: MacClock
+          path: dist
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ needs.build.outputs.tag }}"
+          VERSION="${{ needs.build.outputs.version }}"
+          gh release create "$TAG" dist/MacClock.zip \
+            --target "$GITHUB_SHA" \
+            --title "MacClock $VERSION (build ${{ github.run_number }})" \
+            --generate-notes \
+            --latest \
+            --notes "Universal (Intel and Apple silicon), ad-hoc signed, macOS 13 or newer.
+
+Download MacClock.zip, unzip, and drag MacClock.app to Applications. If macOS blocks the first launch, right-click the app and choose Open, or run:
+
+    xattr -dr com.apple.quarantine /Applications/MacClock.app
+
+See INSTALL.md for full setup."
